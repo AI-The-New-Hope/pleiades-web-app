@@ -1,0 +1,50 @@
+{
+  "tests": [
+    {
+      "name": "Script present",
+      "setup": "",
+      "run": "bash -lc \"test -f scripts/pleiades.py && echo present\"",
+      "input": "",
+      "output": "present",
+      "comparison": "exact",
+      "timeout": 20
+    },
+    {
+      "name": "Plots present",
+      "setup": "",
+      "run": "bash -lc \"test -f results/pleiades_scatter.png && test -f results/pleiades_cmd.png && test -f results/pleiades_histogram.png && echo ok\"",
+      "input": "",
+      "output": "ok",
+      "comparison": "exact",
+      "timeout": 20
+    },
+    {
+      "name": "Tag v1.0 exists",
+      "setup": "",
+      "run": "bash -lc \"[ -n \\\"$(git tag -l 'v1.0')\\\" ] && echo ok\"",
+      "input": "",
+      "output": "ok",
+      "comparison": "exact",
+      "timeout": 20
+    },
+    {
+      "name": "Uses clustering (DBSCAN/HDBSCAN)",
+      "setup": "",
+      "run": "bash -lc \"grep -Eiq 'DBSCAN|HDBSCAN' scripts/pleiades.py && echo ok\"",
+      "input": "",
+      "output": "ok",
+      "comparison": "exact",
+      "timeout": 20
+    },
+    {
+      "name": "README mentions GitHub Pages",
+      "setup": "",
+      "run": "bash -lc \"grep -Eiq 'pages' README.md && echo ok\"",
+      "input": "",
+      "output": "ok",
+      "comparison": "exact",
+      "timeout": 20
+    }
+  ],
+  "autograding": "enabled"
+}

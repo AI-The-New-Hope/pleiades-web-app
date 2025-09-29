@@ -1,0 +1,90 @@
+name: Autograding Tests
+on:
+  - push
+  - workflow_dispatch
+  - repository_dispatch
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1) Script present
+      - name: Script present
+        id: script_present
+        uses: classroom-resources/autograding-io-grader@v1
+        with:
+          test-name: Script present
+          command: bash -lc "test -f scripts/pleiades.py && echo present"
+          input: ""
+          expected-output: present
+          comparison-method: exact
+          timeout: 20
+
+      # 2) Plots present
+      - name: Plots present
+        id: plots_present
+        uses: classroom-resources/autograding-io-grader@v1
+        with:
+          test-name: Plots present
+          command: bash -lc "test -f results/pleiades_scatter.png && test -f results/pleiades_cmd.png && test -f results/pleiades_histogram.png && echo ok"
+          input: ""
+          expected-output: ok
+          comparison-method: exact
+          timeout: 20
+
+      # 3) Tag v1.0 exists
+      - name: Tag v1.0 exists
+        id: tag_v1
+        uses: classroom-resources/autograding-io-grader@v1
+        with:
+          test-name: Tag v1.0 exists
+          command: bash -lc "[ -n \"$(git tag -l 'v1.0')\" ] && echo ok"
+          input: ""
+          expected-output: ok
+          comparison-method: exact
+          timeout: 20
+
+      # 4) Uses clustering (DBSCAN/HDBSCAN)
+      - name: Uses clustering
+        id: clustering
+        uses: classroom-resources/autograding-io-grader@v1
+        with:
+          test-name: Uses clustering (DBSCAN/HDBSCAN)
+          command: bash -lc "grep -Eiq 'DBSCAN|HDBSCAN' scripts/pleiades.py && echo ok"
+          input: ""
+          expected-output: ok
+          comparison-method: exact
+          timeout: 20
+
+      # 5) README mentions GitHub Pages
+      - name: README mentions Pages
+        id: pages_mentioned
+        uses: classroom-resources/autograding-io-grader@v1
+        with:
+          test-name: README mentions GitHub Pages
+          command: bash -lc "grep -Eiq 'pages' README.md && echo ok"
+          input: ""
+          expected-output: ok
+          comparison-method: exact
+          timeout: 20
+
+      # Report results back to GitHub Classroom
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-grading-reporter@v1
+        env:
+          SCRIPT_PRESENT_RESULTS: ${{ steps.script_present.outputs.result }}
+          PLOTS_PRESENT_RESULTS: ${{ steps.plots_present.outputs.result }}
+          TAG_V1_RESULTS: ${{ steps.tag_v1.outputs.result }}
+          CLUSTERING_RESULTS: ${{ steps.clustering.outputs.result }}
+          PAGES_MENTIONED_RESULTS: ${{ steps.pages_mentioned.outputs.result }}
+        with:
+          runners: script_present,plots_present,tag_v1,clustering,pages_mentioned
