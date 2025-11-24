@@ -54,3 +54,13 @@ Generate a simple site (e.g., a `docs/index.md`):
 ## Notes
 - Non-astronomy students: focus on workflow. Codex writes code; you keep it running.
 - Commit early and often. If stuck, push what you have.
+
+## Local Panel App (WIP)
+Phase 1 of the Gaia explorer app is underway. To run the placeholder Panel server locally:
+
+```
+pip install -r requirements.txt
+panel serve app/app.py --autoreload --show
+```
+
+Future steps will flesh out the Gaia query form, visualizations, clustering, and optional FastAPI mounting per `DEV_PLAN.md`.
