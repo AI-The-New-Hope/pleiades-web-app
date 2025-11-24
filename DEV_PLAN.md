@@ -42,7 +42,7 @@ Build a local-first interactive Panel application that queries Gaia DR3 via `ast
    - Provide instructions on first tab describing input ranges and usage tips.
 6. **Testing & Validation**
    - Add unit tests for `GaiaQueryParams` validation and caching key logic (pytest).
-   - Manual verification: run Panel server (`panel serve app/app.py --autoreload`), execute multiple parameter combinations, ensure plots update.
+  - Manual verification: run Panel server (`panel serve app/main.py --autoreload`), execute multiple parameter combinations, ensure plots update.
 
 ## Phase 2 — Clustering & Advanced Analysis
 1. **DBSCAN Integration**

@@ -60,7 +60,7 @@ Phase 1 of the Gaia explorer app is underway. To run the placeholder Panel serve
 
 ```
 pip install -r requirements.txt
-panel serve app/app.py --autoreload --show
+panel serve app/main.py --autoreload --show
 ```
 
 Future steps will flesh out the Gaia query form, visualizations, clustering, and optional FastAPI mounting per `DEV_PLAN.md`.
