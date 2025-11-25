@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import asdict
+from io import BytesIO
 from typing import Optional
 
 import pandas as pd
@@ -14,6 +15,15 @@ from app.gaia import (
     clean_data,
     clear_query_cache,
     query_gaia,
+)
+from app.plots import (
+    COLOR_FIELDS,
+    make_3d_scatter,
+    make_cmd_plot,
+    make_parallax_histogram,
+    make_placeholder_figure,
+    make_proper_motion_plot,
+    make_sky_scatter,
 )
 
 
@@ -36,6 +46,19 @@ class GaiaQueryView:
         self.run_button = pn.widgets.Button(name="Run Gaia Query", button_type="primary")
         self.clear_cache_button = pn.widgets.Button(
             name="Clear Cached Results", button_type="warning"
+        )
+        self.color_select = pn.widgets.Select(
+            name="Color by",
+            options=list(COLOR_FIELDS.keys()),
+            value="G magnitude",
+        )
+        self.color_select.param.watch(self._on_color_change, "value")
+        self.download_button = pn.widgets.FileDownload(
+            label="Download CSV",
+            callback=self._download_csv,
+            button_type="success",
+            filename="gaia_query.csv",
+            disabled=True,
         )
         self.run_button.on_click(self._on_run_query)
         self.clear_cache_button.on_click(self._on_clear_cache)
@@ -78,6 +101,20 @@ class GaiaQueryView:
         )
         self.preview.visible = False
 
+        placeholder = make_placeholder_figure("Run a Gaia query to populate plots.")
+        self.sky_plot = pn.pane.Plotly(placeholder, height=420)
+        self.scatter3d_plot = pn.pane.Plotly(placeholder, height=460)
+        self.cmd_plot = pn.pane.Plotly(placeholder, height=420)
+        self.proper_motion_plot = pn.pane.Plotly(placeholder, height=420)
+        self.parallax_plot = pn.pane.Plotly(placeholder, height=400)
+        self.tabs = pn.Tabs(
+            ("Sky (2D)", self.sky_plot),
+            ("Sky (3D)", self.scatter3d_plot),
+            ("Color-Magnitude", self.cmd_plot),
+            ("Proper Motion", self.proper_motion_plot),
+            ("Parallax Histogram", self.parallax_plot),
+        )
+
         self._last_clean_df: Optional[pd.DataFrame] = None
         self._last_params: Optional[GaiaQueryParams] = None
         self._last_run_time: Optional[dt.datetime] = None
@@ -112,6 +149,13 @@ class GaiaQueryView:
             """,
             sizing_mode="stretch_width",
         )
+        vis_controls = pn.Row(
+            pn.pane.Markdown("**Visualization Controls**"),
+            self.color_select,
+            pn.Spacer(width=20),
+            self.download_button,
+            sizing_mode="stretch_width",
+        )
         return pn.Column(
             intro,
             self.alert,
@@ -119,6 +163,9 @@ class GaiaQueryView:
             pn.layout.HSpacer(height=10),
             pn.pane.Markdown("#### Query Metrics"),
             self.metrics,
+            vis_controls,
+            pn.pane.Markdown("#### Visualizations"),
+            self.tabs,
             pn.pane.Markdown("#### Data Preview"),
             self.preview,
             sizing_mode="stretch_both",
@@ -152,6 +199,7 @@ class GaiaQueryView:
 
         self._update_metrics()
         self._update_preview()
+        self._update_visualizations()
         self._show_alert(
             f"Retrieved {len(raw_df)} rows (cleaned: {len(cleaned_df)}).",
             "success",
@@ -202,6 +250,43 @@ class GaiaQueryView:
         head = self._last_clean_df.head(200)
         self.preview.value = head
         self.preview.visible = True
+
+    def _update_visualizations(self) -> None:
+        if self._last_clean_df is None or self._last_clean_df.empty:
+            for pane in (
+                self.sky_plot,
+                self.scatter3d_plot,
+                self.cmd_plot,
+                self.proper_motion_plot,
+                self.parallax_plot,
+            ):
+                pane.object = make_placeholder_figure(
+                    "Run a Gaia query to populate plots."
+                )
+            self.download_button.disabled = True
+            return
+
+        color_field = COLOR_FIELDS[self.color_select.value]
+        df = self._last_clean_df
+        self.sky_plot.object = make_sky_scatter(df, color_field=color_field)
+        self.scatter3d_plot.object = make_3d_scatter(df, color_field=color_field)
+        self.cmd_plot.object = make_cmd_plot(df)
+        self.proper_motion_plot.object = make_proper_motion_plot(
+            df, color_field=color_field
+        )
+        self.parallax_plot.object = make_parallax_histogram(df)
+        self.download_button.disabled = False
+
+    def _download_csv(self) -> BytesIO:
+        if self._last_clean_df is None or self._last_clean_df.empty:
+            raise ValueError("No data available to download.")
+        csv_bytes = self._last_clean_df.to_csv(index=False).encode("utf-8")
+        return BytesIO(csv_bytes)
+
+    def _on_color_change(self, event) -> None:  # pragma: no cover - Panel runtime
+        if self._last_clean_df is None or self._last_clean_df.empty:
+            return
+        self._update_visualizations()
 
     def _show_alert(self, message: str, level: str) -> None:
         self.alert.object = message
